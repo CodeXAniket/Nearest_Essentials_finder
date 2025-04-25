@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Local Essentials Map</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Roboto', sans-serif;
+      background-color: #f0f2f5;
+      color: #333;
+    }
+
+    header {
+      background-color: #0d47a1;
+      color: white;
+      padding: 16px;
+      text-align: center;
+      font-size: 22px;
+      font-weight: 600;
+      letter-spacing: 1px;
+    }
+
+    #map {
+      height: 65vh;
+      width: 100%;
+    }
+
+    .controls {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      padding: 15px;
+      background: #fff;
+      border-top: 1px solid #ddd;
+    }
+
+    .controls select, .controls input[type="text"] {
+      padding: 10px;
+      font-size: 15px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      min-width: 160px;
+    }
+
+    .controls button {
+      padding: 10px 18px;
+      background-color: #1565c0;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 15px;
+      cursor: pointer;
+    }
+
+    .controls button:hover {
+      background-color: #1976d2;
+    }
+
+    footer {
+      text-align: center;
+      font-size: 14px;
+      color: #777;
+      padding: 12px;
+      background: #e3eaf0;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    Local Essentials Finder
+  </header>
+
+  <div id="map"></div>
+
+  <div class="controls">
+    <select id="category">
+        <option value="supermarket">Supermarkets</option>
+        <option value="pharmacy">Pharmacies</option>
+        <option value="restaurant">Restaurants</option>
+        <option value="atm">ATMs</option>
+      </select>
+    <input type="text" id="keyword" placeholder="Optional keyword (visual only)" disabled />
+    <button onclick="searchEssentials()">Find Nearby</button>
+  </div>
+
+  <footer>
+    © 2025 Essentials Locator | Built with Google Maps API
+  </footer>
+
+  <script>
+    let map;
+    let userLocation;
+    let markers = [];
+
+    async function initMap() {
+      const fallbackLocation = { lat: 28.6139, lng: 77.2090 };
+
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          async (pos) => {
+            userLocation = {
+              lat: pos.coords.latitude,
+              lng: pos.coords.longitude,
+            };
+            loadMap(userLocation);
+          },
+          () => {
+            alert("Location access denied. Showing fallback location.");
+            userLocation = fallbackLocation;
+            loadMap(userLocation);
+          }
+        );
+      } else {
+        userLocation = fallbackLocation;
+        loadMap(userLocation);
+      }
+    }
+
+    function loadMap(location) {
+      map = new google.maps.Map(document.getElementById("map"), {
+        center: location,
+        zoom: 15,
+        mapId: "671402cae240c29b"
+      });
+
+      new google.maps.marker.AdvancedMarkerElement({
+        map,
+        position: location,
+        title: "You are here!",
+      });
+    }
+
+    async function searchEssentials() {
+      clearMarkers();
+
+      const type = document.getElementById("category").value;
+
+      const { Place } = await google.maps.importLibrary("places");
+
+      const request = {
+        fields: ['displayName', 'location', 'formattedAddress'],
+        locationRestriction: {
+          center: userLocation,
+          radius: 5000,
+        },
+        includedTypes: [type]
+      };
+
+      const results = await Place.searchNearby(request);
+
+      results.places.forEach(place => {
+        const marker = new google.maps.marker.AdvancedMarkerElement({
+          map,
+          position: place.location,
+          title: place.displayName,
+        });
+
+        markers.push(marker);
+
+        const info = new google.maps.InfoWindow({
+          content: `<strong>${place.displayName}</strong><br>${place.formattedAddress}`,
+        });
+
+        marker.addListener("click", () => info.open(map, marker));
+      });
+    }
+
+    function clearMarkers() {
+      markers.forEach(m => m.setMap(null));
+      markers = [];
+    }
+
+    window.initMap = initMap;
+  </script>
+
+  <script async defer
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBcFLLcq-F-1lKCh6DvIqrvY6-iDNi06sg&callback=initMap&libraries=maps,places,marker&v=beta">
+  </script>
+</body>
+</html>
