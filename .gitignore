@@ -5,6 +5,10 @@ backend/target/
 frontend/node_modules/
 frontend/dist/
 
+# Local design notes — kept on this machine only, never pushed
+[Dd][Ee][Ss][Ii][Gg][Nn].md
+[Ss][Yy][Ss][Tt][Ee][Mm].md
+
 # Local settings / secrets
 .env
 .env.*

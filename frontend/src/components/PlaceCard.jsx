@@ -1,9 +1,14 @@
 import { directionsUrl, formatDistance, formatDuration } from '../utils.js'
-import { ClockIcon, ExternalIcon, PhoneIcon, RouteIcon, StarIcon } from './Icons.jsx'
+import { ArrowIcon, CategoryIcon, ClockIcon, PhoneIcon, RouteIcon, StarIcon } from './Icons.jsx'
 
+/**
+ * One result, laid out like a magazine story row: running number, category
+ * eyebrow, serif headline, serif address, then actions. Rows are separated by
+ * hairlines; the selected row gets a soft fill and a black bar on the left.
+ */
 export default function PlaceCard({
+  index,
   place,
-  color,
   distanceKm,
   origin,
   selected,
@@ -18,23 +23,27 @@ export default function PlaceCard({
 
   return (
     <li
-      className={`rounded-2xl border bg-white p-3.5 transition ${
-        selected ? 'border-brand-600 shadow-md ring-2 ring-brand-100' : 'border-stone-200 hover:border-stone-300'
+      className={`relative border-b border-hairline px-4 py-5 sm:px-5 ${
+        selected ? 'bg-canvas-soft before:absolute before:inset-y-0 before:left-0 before:w-1 before:bg-ink' : 'bg-canvas'
       }`}
     >
-      <div className="flex items-start gap-3">
+      <div className="flex items-start gap-4">
+        <span className="w-7 shrink-0 pt-0.5 font-display text-[20px] leading-6 text-body" aria-hidden="true">
+          {String(index + 1).padStart(2, '0')}
+        </span>
+
         <button type="button" onClick={onSelect} className="min-w-0 flex-1 text-left">
-          <p className="mb-0.5 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide" style={{ color }}>
-            <span className="h-2 w-2 rounded-full" style={{ background: color }} />
+          <p className="type-eyebrow mb-1.5 flex items-center gap-1.5 text-ink">
+            <CategoryIcon category={place.category} size={13} />
             {place.categoryLabel}
           </p>
-          <h3 className="truncate text-[15px] font-bold text-stone-900">{place.name}</h3>
-          {place.address && <p className="mt-0.5 line-clamp-2 text-xs text-stone-500">{place.address}</p>}
+          <h3 className="font-display text-[22px] leading-[26px] text-ink">{place.name}</h3>
+          {place.address && <p className="mt-1.5 font-serif text-[15px] leading-[22px] text-body">{place.address}</p>}
         </button>
 
-        <div className="flex shrink-0 flex-col items-end gap-1">
+        <div className="flex shrink-0 flex-col items-end gap-2">
           {distanceKm != null && (
-            <span className="rounded-full bg-stone-100 px-2 py-0.5 text-xs font-bold text-stone-700">
+            <span className="whitespace-nowrap font-display text-[20px] leading-6 text-ink">
               {formatDistance(distanceKm)}
             </span>
           )}
@@ -43,54 +52,58 @@ export default function PlaceCard({
             onClick={onToggleFavorite}
             aria-label={place.favorite ? 'Remove from saved places' : 'Save this place'}
             title={place.favorite ? 'Saved' : 'Save'}
-            className={`rounded-lg p-1.5 ${place.favorite ? 'text-amber-500' : 'text-stone-400 hover:text-stone-600'}`}
+            className={`grid h-9 w-9 place-items-center rounded-full border ${
+              place.favorite ? 'border-ink bg-ink text-canvas' : 'border-hairline bg-canvas text-ink hover:border-ink'
+            }`}
           >
-            <StarIcon filled={place.favorite} />
+            <StarIcon filled={place.favorite} width={16} height={16} />
           </button>
         </div>
       </div>
 
-      {(place.openingHours || place.phone) && (
-        <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-stone-600">
-          {place.openingHours && (
-            <span className="flex items-center gap-1">
-              <ClockIcon width={13} height={13} /> {place.openingHours}
-            </span>
-          )}
-          {place.phone && (
-            <a href={`tel:${place.phone}`} className="flex items-center gap-1 hover:text-brand-700">
-              <PhoneIcon width={13} height={13} /> {place.phone}
-            </a>
-          )}
+      <div className="pl-11">
+        {(place.openingHours || place.phone) && (
+          <div className="type-caption mt-3 flex flex-wrap gap-x-4 gap-y-1 text-ink-soft">
+            {place.openingHours && (
+              <span className="flex items-center gap-1.5">
+                <ClockIcon width={13} height={13} /> {place.openingHours}
+              </span>
+            )}
+            {place.phone && (
+              <a href={`tel:${place.phone}`} className="flex items-center gap-1.5 text-link hover:underline">
+                <PhoneIcon width={13} height={13} /> {place.phone}
+              </a>
+            )}
+          </div>
+        )}
+
+        {showingRoute && (
+          <p className="type-body-sm-strong mt-3 border-l-2 border-ink pl-3 text-ink">
+            {travelMode === 'car' ? 'Drive' : 'Walk'} {formatDistance(route.distanceKm)}
+            <span className="font-normal text-body"> · about {formatDuration(route.durationMin)}</span>
+          </p>
+        )}
+
+        <div className="mt-4 flex gap-2">
+          <button
+            type="button"
+            onClick={onRoute}
+            disabled={!origin || routeLoading}
+            className="type-body-sm-strong flex flex-1 items-center justify-center gap-1.5 border border-ink bg-canvas px-3 py-2.5 text-ink hover:bg-canvas-soft disabled:opacity-40"
+          >
+            <RouteIcon width={15} height={15} />
+            {routeLoading ? 'Loading route…' : showingRoute ? 'Hide route' : 'Show route'}
+          </button>
+          <a
+            href={directionsUrl(origin, place, travelMode)}
+            target="_blank"
+            rel="noreferrer"
+            className="type-body-sm-strong flex flex-1 items-center justify-center gap-1.5 bg-ink px-3 py-2.5 text-canvas hover:bg-ink-soft"
+          >
+            Navigate
+            <ArrowIcon width={15} height={15} />
+          </a>
         </div>
-      )}
-
-      {showingRoute && (
-        <p className="mt-2 rounded-lg bg-brand-50 px-2.5 py-1.5 text-xs font-semibold text-brand-900">
-          {travelMode === 'car' ? 'Drive' : 'Walk'}: {formatDistance(route.distanceKm)} · about{' '}
-          {formatDuration(route.durationMin)}
-        </p>
-      )}
-
-      <div className="mt-3 flex gap-2">
-        <button
-          type="button"
-          onClick={onRoute}
-          disabled={!origin || routeLoading}
-          className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-stone-300 py-2 text-xs font-semibold text-stone-800 hover:bg-stone-50 disabled:opacity-50"
-        >
-          <RouteIcon width={15} height={15} />
-          {routeLoading ? 'Loading route…' : showingRoute ? 'Hide route' : 'Show route'}
-        </button>
-        <a
-          href={directionsUrl(origin, place, travelMode)}
-          target="_blank"
-          rel="noreferrer"
-          className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-stone-900 py-2 text-xs font-semibold text-white hover:bg-stone-700"
-        >
-          <ExternalIcon width={15} height={15} />
-          Navigate
-        </a>
       </div>
     </li>
   )

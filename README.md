@@ -23,6 +23,7 @@ You share your location (or type an area, or click on the map), pick what you ne
 - **Navigate** button that opens Google Maps turn-by-turn directions
 - **User accounts** (sign up / log in) with **saved places** and **search history**
 - **Works on phones and desktops** (responsive layout)
+- **Editorial black-and-white design**: serif headlines (Playfair Display, Source Serif 4) with Inter for labels, square corners, hairline dividers and a grayscale map, so the black pins and route stand out
 - **Free map data**: everything comes from OpenStreetMap, so no paid API key is needed
 
 ---

@@ -33,7 +33,6 @@ export default function App() {
   const [error, setError] = useState('')
   const [hint, setHint] = useState('')
 
-  const colors = useMemo(() => Object.fromEntries(categories.map((c) => [c.id, c.color])), [categories])
   const favoriteIds = useMemo(() => new Set(favorites.map((f) => f.id)), [favorites])
 
   const refreshUserData = useCallback(async () => {
@@ -84,28 +83,39 @@ export default function App() {
   // Keep the latest filters available to callbacks that fire later (like geolocation).
   const filtersRef = useRef(filters)
   filtersRef.current = filters
+  const originRef = useRef(origin)
+  originRef.current = origin
 
-  const locateMe = useCallback(() => {
-    if (!navigator.geolocation) {
-      setHint('Your browser cannot share its location. Type an area or click on the map instead.')
-      return
-    }
-    setLocating(true)
-    setHint('')
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setLocating(false)
-        const here = { lat: pos.coords.latitude, lng: pos.coords.longitude, label: 'Your current location' }
-        setOrigin(here)
-        runSearch(here, filtersRef.current)
-      },
-      () => {
-        setLocating(false)
-        setHint('Location access was blocked. Type an area above or click anywhere on the map to search there.')
-      },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 },
-    )
-  }, [runSearch])
+  /**
+   * auto = the attempt made on page load. If the user has picked a place by the
+   * time the browser answers, that answer (or refusal) is ignored.
+   */
+  const locateMe = useCallback(
+    (auto = false) => {
+      if (!navigator.geolocation) {
+        setHint('Your browser cannot share its location. Type an area or click on the map instead.')
+        return
+      }
+      setLocating(true)
+      setHint('')
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          setLocating(false)
+          if (auto && originRef.current) return
+          const here = { lat: pos.coords.latitude, lng: pos.coords.longitude, label: 'Your current location' }
+          setOrigin(here)
+          runSearch(here, filtersRef.current)
+        },
+        () => {
+          setLocating(false)
+          if (auto && originRef.current) return
+          setHint('Location access was blocked. Type an area above or click anywhere on the map to search there.')
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 },
+      )
+    },
+    [runSearch],
+  )
 
   // First load: categories, restore login, try to locate the user once.
   const started = useRef(false)
@@ -122,7 +132,7 @@ export default function App() {
         })
         .catch(() => setToken(null))
     }
-    locateMe()
+    locateMe(true)
   }, [locateMe, refreshUserData])
 
   // ---------- handlers ----------
@@ -218,7 +228,6 @@ export default function App() {
             origin={origin}
             radiusKm={filters.radiusKm}
             places={tab === 'history' ? [] : listedPlaces}
-            colors={colors}
             selectedId={selectedId}
             route={route}
             onSelect={setSelectedId}
@@ -226,12 +235,12 @@ export default function App() {
           />
         </div>
 
-        <aside className="min-h-0 flex-1 overflow-y-auto bg-stone-50 lg:order-1 lg:w-[430px] lg:flex-none lg:border-r lg:border-stone-200">
+        <aside className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-canvas lg:order-1 lg:w-[440px] lg:flex-none lg:border-r lg:border-ink">
           <SearchPanel
             categories={categories}
             origin={origin}
             locating={locating}
-            onUseMyLocation={locateMe}
+            onUseMyLocation={() => locateMe()}
             onPickLocation={pickLocation}
             filters={filters}
             onFiltersChange={setFilters}
@@ -239,13 +248,9 @@ export default function App() {
             searching={searching}
           />
 
-          <div className="border-t border-stone-200 p-4 sm:p-5">
-            {hint && <Banner tone="info">{hint}</Banner>}
-            {error && <Banner tone="error">{error}</Banner>}
-            {results?.notice && tab === 'results' && <Banner tone="warn">{results.notice}</Banner>}
-
-            <div className="mb-3 flex items-center justify-between gap-2">
-              <div role="tablist" className="flex rounded-xl bg-stone-200/70 p-1 text-xs font-bold">
+          <div className="flex-1 border-t border-ink">
+            <div className="flex items-end justify-between gap-2 border-b border-hairline px-4 sm:px-5">
+              <div role="tablist" className="flex gap-5">
                 <Tab active={tab === 'results'} onClick={() => setTab('results')}>
                   Results{results ? ` (${results.count})` : ''}
                 </Tab>
@@ -257,7 +262,7 @@ export default function App() {
                 </Tab>
               </div>
               {tab !== 'history' && (
-                <div className="flex rounded-xl bg-stone-200/70 p-1" aria-label="Travel mode">
+                <div className="mb-2 flex border border-ink" role="group" aria-label="Travel mode">
                   <ModeButton active={travelMode === 'foot'} onClick={() => changeTravelMode('foot')} label="Walking">
                     <WalkIcon width={16} height={16} />
                   </ModeButton>
@@ -267,6 +272,10 @@ export default function App() {
                 </div>
               )}
             </div>
+
+            {hint && <Banner label="Note">{hint}</Banner>}
+            {error && <Banner label="Error">{error}</Banner>}
+            {results?.notice && tab === 'results' && <Banner label="Heads up">{results.notice}</Banner>}
 
             {tab === 'history' ? (
               <HistoryList
@@ -280,12 +289,12 @@ export default function App() {
             ) : searching ? (
               <LoadingList />
             ) : listedPlaces.length > 0 ? (
-              <ul className="space-y-2.5">
-                {listedPlaces.map((p) => (
+              <ul>
+                {listedPlaces.map((p, i) => (
                   <PlaceCard
                     key={p.id}
+                    index={i}
                     place={p}
-                    color={colors[p.category] ?? '#44403c'}
                     distanceKm={p.distanceKm}
                     origin={origin}
                     selected={p.id === selectedId}
@@ -310,6 +319,13 @@ export default function App() {
               </Empty>
             )}
           </div>
+
+          <footer className="bg-ink px-4 py-8 text-canvas sm:px-5">
+            <p className="font-display text-[22px] leading-none">Nearest Essentials</p>
+            <p className="type-caption mt-3 text-canvas/70">
+              Map and place data © OpenStreetMap contributors. Routes by OSRM.
+            </p>
+          </footer>
         </aside>
       </div>
 
@@ -326,7 +342,9 @@ function Tab({ active, onClick, children }) {
       role="tab"
       aria-selected={active}
       onClick={onClick}
-      className={`rounded-lg px-3 py-1.5 transition ${active ? 'bg-white text-stone-900 shadow-sm' : 'text-stone-500 hover:text-stone-800'}`}
+      className={`type-body-sm-strong -mb-px border-b-2 py-3.5 ${
+        active ? 'border-ink text-ink' : 'border-transparent text-body hover:text-ink'
+      }`}
     >
       {children}
     </button>
@@ -340,31 +358,39 @@ function ModeButton({ active, onClick, label, children }) {
       aria-label={label}
       aria-pressed={active}
       title={label}
-      className={`rounded-lg px-2.5 py-1.5 ${active ? 'bg-white text-brand-800 shadow-sm' : 'text-stone-500 hover:text-stone-800'}`}
+      className={`grid h-8 w-9 place-items-center ${active ? 'bg-ink text-canvas' : 'bg-canvas text-ink hover:bg-canvas-soft'}`}
     >
       {children}
     </button>
   )
 }
 
-function Banner({ tone, children }) {
-  const styles = {
-    info: 'bg-sky-50 text-sky-900 ring-sky-100',
-    warn: 'bg-amber-50 text-amber-900 ring-amber-100',
-    error: 'bg-red-50 text-red-800 ring-red-100',
-  }
-  return <p className={`mb-3 rounded-xl px-3 py-2.5 text-sm ring-1 ${styles[tone]}`}>{children}</p>
+/** Messages use the ink + grey hierarchy only: an eyebrow label and a black rule on the left. */
+function Banner({ label, children }) {
+  return (
+    <div role="status" className="mx-4 mt-4 border-l-2 border-ink bg-canvas-soft px-4 py-3 sm:mx-5">
+      <p className="type-eyebrow text-ink">{label}</p>
+      <p className="type-body-sm mt-1 text-ink-soft">{children}</p>
+    </div>
+  )
 }
 
 function LoadingList() {
   return (
     <div>
-      <p className="mb-3 text-xs text-stone-500">
+      <p className="type-body-serif-md px-4 pt-4 italic text-ink-soft sm:px-5">
         Looking around… the first search in a new area pulls live map data and can take a few seconds.
       </p>
-      <ul className="space-y-2.5">
+      <ul className="mt-2">
         {[0, 1, 2].map((i) => (
-          <li key={i} className="h-28 animate-pulse rounded-2xl border border-stone-200 bg-white" />
+          <li key={i} className="flex animate-pulse gap-4 border-b border-hairline px-4 py-5 sm:px-5">
+            <span className="h-6 w-7 bg-canvas-soft" />
+            <span className="flex-1 space-y-2.5">
+              <span className="block h-3 w-24 bg-canvas-soft" />
+              <span className="block h-5 w-3/4 bg-canvas-soft" />
+              <span className="block h-4 w-1/2 bg-canvas-soft" />
+            </span>
+          </li>
         ))}
       </ul>
     </div>

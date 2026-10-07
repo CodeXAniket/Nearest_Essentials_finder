@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { api } from '../api.js'
-import { CrosshairIcon, PinIcon, SearchIcon } from './Icons.jsx'
+import { CategoryIcon, CrosshairIcon, PinIcon, SearchIcon } from './Icons.jsx'
 
 /**
  * The search form: where (GPS or typed place), what (category + keyword) and how far (radius).
@@ -46,49 +46,58 @@ export default function SearchPanel({
   const set = (patch) => onFiltersChange({ ...filters, ...patch })
 
   return (
-    <section className="space-y-5 p-4 sm:p-5">
+    <section>
+      {/* ---------- Intro ---------- */}
+      <div className="border-b border-hairline px-4 pb-6 pt-7 sm:px-5">
+        <p className="type-eyebrow mb-3 text-ink">Local guide</p>
+        <h2 className="type-display-sm text-ink sm:type-display-md">Everyday essentials, nearest first.</h2>
+        <p className="type-body-serif-md mt-3 text-body">
+          Groceries, medicines, cash, fuel and post, found from live map data and sorted by how far you have to go.
+        </p>
+      </div>
+
       {/* ---------- Where ---------- */}
-      <div>
+      <div className="border-b border-hairline px-4 py-5 sm:px-5">
         <Label>Where</Label>
-        <div className="mb-2 flex items-center gap-2 rounded-xl bg-brand-50 px-3 py-2.5 text-sm ring-1 ring-brand-100">
-          <PinIcon className="shrink-0 text-brand-700" />
-          <span className="min-w-0 flex-1 truncate font-medium text-brand-900">
+        <div className="mb-3 flex items-center gap-3">
+          <PinIcon className="shrink-0 text-ink" />
+          <span className="type-body-md-strong min-w-0 flex-1 truncate text-ink">
             {origin ? origin.label : 'No location yet'}
           </span>
           <button
             type="button"
             onClick={onUseMyLocation}
             disabled={locating}
-            className="flex shrink-0 items-center gap-1.5 rounded-lg bg-white px-2.5 py-1.5 text-xs font-semibold text-brand-800 shadow-sm ring-1 ring-brand-100 hover:bg-brand-50 disabled:opacity-60"
+            className="type-body-sm-strong flex shrink-0 items-center gap-1.5 border border-ink bg-canvas px-3 py-2 text-ink hover:bg-canvas-soft disabled:opacity-50"
           >
             <CrosshairIcon width={14} height={14} />
             {locating ? 'Locating…' : 'My location'}
           </button>
         </div>
 
-        <form onSubmit={lookUpPlace} className="relative">
+        <form onSubmit={lookUpPlace} className="relative flex">
           <input
             value={placeText}
             onChange={(e) => setPlaceText(e.target.value)}
             placeholder="Or type an area, e.g. Katpadi, Vellore"
             aria-label="Search for an area"
-            className="w-full rounded-xl border border-stone-300 bg-white py-2.5 pl-3 pr-20 text-sm outline-none placeholder:text-stone-400 focus:border-brand-600 focus:ring-2 focus:ring-brand-100"
+            className="type-body-md min-w-0 flex-1 border border-ink bg-canvas px-4 py-3 text-ink outline-none placeholder:text-body focus:shadow-[inset_0_0_0_1px_var(--color-ink)]"
           />
           <button
             type="submit"
             disabled={geoLoading}
-            className="absolute right-1.5 top-1.5 rounded-lg bg-stone-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-stone-700 disabled:opacity-60"
+            className="type-body-sm-strong shrink-0 border border-l-0 border-ink bg-ink px-4 text-canvas hover:bg-ink-soft disabled:opacity-60"
           >
             {geoLoading ? '…' : 'Find'}
           </button>
           {suggestions.length > 0 && (
-            <ul className="absolute z-[1000] mt-1 w-full overflow-hidden rounded-xl border border-stone-200 bg-white shadow-lg">
+            <ul className="absolute top-full z-[1000] mt-[-1px] w-full border border-ink bg-canvas">
               {suggestions.map((s) => (
-                <li key={`${s.latitude},${s.longitude}`}>
+                <li key={`${s.latitude},${s.longitude}`} className="border-b border-hairline last:border-b-0">
                   <button
                     type="button"
                     onClick={() => choose(s)}
-                    className="w-full px-3 py-2.5 text-left text-sm hover:bg-stone-50"
+                    className="type-body-sm w-full px-4 py-3 text-left text-ink hover:bg-canvas-soft"
                   >
                     {s.label}
                   </button>
@@ -97,19 +106,19 @@ export default function SearchPanel({
             </ul>
           )}
         </form>
-        {geoError && <p className="mt-1.5 text-xs text-red-600">{geoError}</p>}
-        <p className="mt-1.5 text-xs text-stone-500">Tip: you can also click anywhere on the map.</p>
+        {geoError && <p className="type-body-sm-strong mt-2 text-ink">{geoError}</p>}
+        <p className="type-caption mt-2 text-body">Tip: you can also click anywhere on the map.</p>
       </div>
 
       {/* ---------- What ---------- */}
-      <div>
+      <div className="border-b border-hairline px-4 py-5 sm:px-5">
         <Label>What do you need?</Label>
-        <div className="flex flex-wrap gap-1.5">
-          <Chip active={!filters.category} onClick={() => set({ category: '' })} color="#44403c">
+        <div className="flex flex-wrap gap-2">
+          <Chip active={!filters.category} onClick={() => set({ category: '' })} category="ALL">
             All essentials
           </Chip>
           {categories.map((c) => (
-            <Chip key={c.id} active={filters.category === c.id} onClick={() => set({ category: c.id })} color={c.color}>
+            <Chip key={c.id} active={filters.category === c.id} onClick={() => set({ category: c.id })} category={c.id}>
               {c.label}
             </Chip>
           ))}
@@ -119,15 +128,15 @@ export default function SearchPanel({
           onChange={(e) => set({ keyword: e.target.value })}
           placeholder="Name or keyword (optional), e.g. Apollo"
           aria-label="Keyword"
-          className="mt-2.5 w-full rounded-xl border border-stone-300 bg-white px-3 py-2.5 text-sm outline-none placeholder:text-stone-400 focus:border-brand-600 focus:ring-2 focus:ring-brand-100"
+          className="type-body-md mt-3 w-full border border-ink bg-canvas px-4 py-3 text-ink outline-none placeholder:text-body focus:shadow-[inset_0_0_0_1px_var(--color-ink)]"
         />
       </div>
 
       {/* ---------- How far ---------- */}
-      <div>
+      <div className="px-4 py-5 sm:px-5">
         <div className="flex items-baseline justify-between">
           <Label>Within</Label>
-          <span className="text-sm font-bold text-brand-800">{filters.radiusKm} km</span>
+          <span className="font-display text-[26px] leading-none text-ink">{filters.radiusKm} km</span>
         </div>
         <input
           type="range"
@@ -137,39 +146,37 @@ export default function SearchPanel({
           value={filters.radiusKm}
           onChange={(e) => set({ radiusKm: Number(e.target.value) })}
           aria-label="Search radius in kilometres"
-          className="w-full"
+          className="mt-2 w-full"
         />
-      </div>
 
-      <button
-        onClick={onSearch}
-        disabled={!origin || searching}
-        className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand-700 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-brand-800 disabled:cursor-not-allowed disabled:bg-stone-300"
-      >
-        <SearchIcon />
-        {searching ? 'Searching…' : origin ? 'Search nearby' : 'Pick a location first'}
-      </button>
+        <button
+          onClick={onSearch}
+          disabled={!origin || searching}
+          className="type-button mt-5 flex min-h-12 w-full items-center justify-center gap-2 bg-ink px-5 py-3 text-canvas hover:bg-ink-soft disabled:cursor-not-allowed disabled:bg-canvas-soft disabled:text-body"
+        >
+          <SearchIcon />
+          {searching ? 'Searching…' : origin ? 'Search nearby' : 'Pick a location first'}
+        </button>
+      </div>
     </section>
   )
 }
 
 function Label({ children }) {
-  return <p className="mb-2 text-xs font-bold uppercase tracking-wider text-stone-500">{children}</p>
+  return <p className="type-eyebrow mb-3 text-ink">{children}</p>
 }
 
-function Chip({ active, onClick, color, children }) {
+function Chip({ active, onClick, category, children }) {
   return (
     <button
       type="button"
       onClick={onClick}
       aria-pressed={active}
-      className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
-        active
-          ? 'border-stone-900 bg-stone-900 text-white'
-          : 'border-stone-300 bg-white text-stone-700 hover:border-stone-400'
+      className={`type-body-sm flex items-center gap-2 border px-3 py-2 ${
+        active ? 'border-ink bg-ink text-canvas' : 'border-hairline bg-canvas text-ink hover:border-ink'
       }`}
     >
-      <span className="h-2 w-2 rounded-full" style={{ background: color }} />
+      <CategoryIcon category={category} size={14} />
       {children}
     </button>
   )
