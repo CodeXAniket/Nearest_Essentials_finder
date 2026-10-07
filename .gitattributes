@@ -1,0 +1,3 @@
+# The Maven wrapper script must keep Unix line endings to run on Linux/macOS.
+backend/mvnw text eol=lf
+*.cmd text eol=crlf

@@ -1,0 +1,18 @@
+# Backend (Maven)
+backend/target/
+
+# Frontend (Vite)
+frontend/node_modules/
+frontend/dist/
+
+# Local settings / secrets
+.env
+.env.*
+!.env.example
+
+# Editors and OS files
+.idea/
+*.iml
+.vscode/
+.DS_Store
+Thumbs.db
