@@ -1,5 +1,7 @@
 # Nearest Essentials Finder
 
+**Live demo: [nearest-essentials-finder.vercel.app](https://nearest-essentials-finder.vercel.app/)**
+
 A full-stack web app that helps you find **essential shops and services near you**: grocery stores, pharmacies, hospitals and clinics, ATMs, banks, bakeries, fuel stations and post offices.
 
 You share your location (or type an area, or click on the map), pick what you need and how far you're willing to go, and the app shows the nearest places on a map and in a list, **sorted by distance**. You can draw the walking or driving route to any place, open turn-by-turn navigation, and, after signing up, save your go-to places and re-run past searches.
@@ -254,7 +256,7 @@ Browser ──HTTPS──► Vercel (React build)
 ```
 
 - **Backend:** live at `https://essentials-api.cipherlink.duckdns.org/api/health`. [`deploy/setup-server.sh`](deploy/setup-server.sh) prepares a fresh Ubuntu server in one run. It installs Java 21 and MySQL, tunes them to fit in 1 GB of RAM, creates the database with a random password, adds a systemd service, and adds a Caddy site that gets a free HTTPS certificate.
-- **Frontend:** import the repo on Vercel and set **Root Directory** to `frontend`. Vite is detected automatically. [`frontend/vercel.json`](frontend/vercel.json) forwards every `/api/...` call to the backend, so the React code needs no changes or environment variables.
+- **Frontend:** live at [nearest-essentials-finder.vercel.app](https://nearest-essentials-finder.vercel.app/). To deploy your own copy, import the repo on Vercel and set **Root Directory** to `frontend`. Vite is detected automatically. [`frontend/vercel.json`](frontend/vercel.json) forwards every `/api/...` call to the backend, so the React code needs no changes or environment variables.
 - **CORS:** the server allows `https://*.vercel.app` by default. To lock it to one domain, change `CORS_ORIGINS` in `/etc/essentials-finder.env` on the server and restart the service.
 
 ---
