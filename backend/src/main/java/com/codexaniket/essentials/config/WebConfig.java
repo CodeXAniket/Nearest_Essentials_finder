@@ -27,11 +27,15 @@ public class WebConfig implements WebMvcConfigurer {
         this.currentUserResolver = currentUserResolver;
     }
 
-    /** Lets the React dev server (a different port = different origin) call the API. */
+    /**
+     * Lets the frontend call the API from a different origin: the Vite dev server
+     * locally, the Vercel site in production. Patterns such as https://*.vercel.app
+     * are allowed (login uses a Bearer token, not cookies, so this exposes no session).
+     */
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/api/**")
-                .allowedOrigins(props.cors().allowedOrigins().toArray(String[]::new))
+                .allowedOriginPatterns(props.cors().allowedOrigins().toArray(String[]::new))
                 .allowedMethods("GET", "POST", "DELETE", "OPTIONS")
                 .allowedHeaders("*");
     }

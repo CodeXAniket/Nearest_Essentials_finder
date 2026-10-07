@@ -239,6 +239,26 @@ All settings can be overridden with environment variables:
 
 ---
 
+## Deployment
+
+The two halves are hosted separately:
+
+```
+Browser ──HTTPS──► Vercel (React build)
+                     │  /api/* is forwarded (frontend/vercel.json)
+                     ▼
+              Caddy (HTTPS) on an AWS EC2 Ubuntu server
+                     │
+                     ▼
+              Spring Boot on 127.0.0.1:8080 ──► MySQL on the same server
+```
+
+- **Backend:** live at `https://essentials-api.cipherlink.duckdns.org/api/health`. [`deploy/setup-server.sh`](deploy/setup-server.sh) prepares a fresh Ubuntu server in one run. It installs Java 21 and MySQL, tunes them to fit in 1 GB of RAM, creates the database with a random password, adds a systemd service, and adds a Caddy site that gets a free HTTPS certificate.
+- **Frontend:** import the repo on Vercel and set **Root Directory** to `frontend`. Vite is detected automatically. [`frontend/vercel.json`](frontend/vercel.json) forwards every `/api/...` call to the backend, so the React code needs no changes or environment variables.
+- **CORS:** the server allows `https://*.vercel.app` by default. To lock it to one domain, change `CORS_ORIGINS` in `/etc/essentials-finder.env` on the server and restart the service.
+
+---
+
 ## Data sources and credits
 
 - Map tiles and place data: © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors
